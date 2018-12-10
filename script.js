@@ -39,7 +39,14 @@ function fetchSegmentAndAppend(segmentUrl, sourceBuffer, callback) {
     sourceBuffer.addEventListener('error', function(ev) {
       callback(ev);
     });
-    sourceBuffer.appendBuffer(buf);
+    function append() {
+      if (!sourceBuffer.updating) {
+        sourceBuffer.appendBuffer(buf);
+      } else {
+        setTimeout(append, Math.floor(Math.random() * 200))
+      }
+    }
+    append();
   });
 }
 
