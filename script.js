@@ -1,5 +1,7 @@
 var queue = [];
+var audio = [];
 var mimeCodec = 'video/mp4; codecs="avc3.4d4015"';
+var audioCodec = 'audio/mp4; codecs="mp4a.40.2"';
 var mediaSource = new MediaSource();
 var video = document.querySelector('video');
 video.src = URL.createObjectURL(mediaSource);
@@ -7,28 +9,36 @@ mediaSource.addEventListener('sourceopen', handleSourceOpen.bind(mediaSource));
 
 function handleSourceOpen() {
   var mediaSource = this;
+  var vidinit = "http://rdmedia.bbc.co.uk/dash/ondemand/bbb/2/avc3/512x288p25/IS.mp4";
+  var audinit = "http://rdmedia.bbc.co.uk/dash/ondemand/bbb/2/audio/96kbps/IS.mp4";
   var sourceBuffer = mediaSource.addSourceBuffer(mimeCodec);
+  var audioBuffer = mediaSource.addSourceBuffer(audioCodec);
   for (var i = 1; i <= 150; i++) {
     var vid = "http://rdmedia.bbc.co.uk/dash/ondemand/bbb/2/avc3/512x288p25/" + ("00000" + i).slice(-6) + ".m4s";
+    var aud = "http://rdmedia.bbc.co.uk/dash/ondemand/bbb/2/audio/96kbps/" + ("00000" + i).slice(-6) + ".m4s";
     queue.push(vid);
+    audio.push(aud);
   }
-  fetchSegmentAndAppend("http://rdmedia.bbc.co.uk/dash/ondemand/bbb/2/avc3/512x288p25/IS.mp4", sourceBuffer, function() {
-    function iter() {
-      url = queue.shift();
-      if (url === undefined) {
-        return;
-      }
-      fetchSegmentAndAppend(url, sourceBuffer, function(err) {
-        if (err) {
-          console.error(err);
-        } else {
-          setTimeout(iter, 2000);
+  function fetchSegmentedMedia(initurl, sourceBuffer, queue) {
+    fetchSegmentAndAppend(initurl, sourceBuffer, function() {
+      function iter() {
+        url = queue.shift();
+        if (url === undefined) {
+          return;
         }
-      });
-    }
-    iter();
-    video.play();
-  });
+        fetchSegmentAndAppend(url, sourceBuffer, function(err) {
+          if (err) {
+            console.error(err);
+          } else {
+            setTimeout(iter, 200);
+          }
+        });
+      }
+      iter();
+    });
+  }
+  fetchSegmentedMedia(vidinit, sourceBuffer, queue);
+  fetchSegmentedMedia(audinit, audioBuffer, audio);
 }
 
 function fetchSegmentAndAppend(segmentUrl, sourceBuffer, callback) {
